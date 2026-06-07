@@ -51,12 +51,25 @@ function TableRow(props){
 function HomeScreen(props){
   var lang = props.lang || 'he';
   var go = props.go;
-  var league = props.league;
-  var setLeague = props.setLeague;
+  var L = props.data; // live store when present
 
-  var f2 = window.fixtureById('f2');
-  var cd = useCountdown(f2.lockMs);
-  var sorted = window.membersSorted();
+  // data sources (live vs demo)
+  var leagues = L ? L.leagues : window.LEAGUES;
+  var league  = L ? (L.activeLeague || (L.leagues[0]||{})) : props.league;
+  var setLeague = L ? function(lg){ L.actions.setActiveLeague(lg.id); } : props.setLeague;
+  var fixtures = L ? L.fixtures : window.FIXTURES;
+  var sorted   = L ? L.members : window.membersSorted();
+
+  // next match = soonest unlocked fixture; live = an in-play fixture
+  var nextFixture = L
+    ? (fixtures.filter(function(f){ return f.status==='locksoon'; })[0] ||
+       fixtures.filter(function(f){ return f.status==='upcoming'; })[0] || null)
+    : window.fixtureById('f2');
+  var liveFixture = L
+    ? (fixtures.filter(function(f){ return f.status==='live'; })[0] || null)
+    : window.fixtureById('f1');
+
+  var cd = useCountdown(nextFixture ? nextFixture.lockMs : 0);
   var meRank = sorted.findIndex(function(m){ return m.you; }) + 1;
 
   /* header */
@@ -75,7 +88,7 @@ function HomeScreen(props){
 
   /* league carousel */
   var carousel = homeR.createElement('div', { style:{ display:'flex', gap:8, overflowX:'auto', marginBottom:16, paddingBottom:2 } },
-    window.LEAGUES.map(function(lg){
+    leagues.map(function(lg){
       var active = lg.id === league.id;
       return homeR.createElement('button', { key:lg.id, onClick:function(){ setLeague(lg); }, style:{
         display:'flex', alignItems:'center', gap:7, padding:'8px 14px', borderRadius:999, flex:'0 0 auto',
@@ -92,8 +105,8 @@ function HomeScreen(props){
   );
 
   /* next match widget */
-  var predicted = !!f2.myPred;
-  var nextMatch = homeR.createElement(window.Card, { style:{ marginBottom:14 } },
+  var predicted = !!(nextFixture && nextFixture.myPred);
+  var nextMatch = nextFixture ? homeR.createElement(window.Card, { style:{ marginBottom:14 } },
     homeR.createElement('div', { style:{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 } },
       homeR.createElement('div', { style:{ fontSize:14, fontWeight:700, color:'var(--ink-2)' } },
         window.tx({ he:'המשחק הקרוב', en:'Next match' }, lang)),
@@ -101,7 +114,7 @@ function HomeScreen(props){
         predicted ? window.tx({ he:'✓ הימרת', en:'✓ Predicted' }, lang) : window.tx({ he:'טרם הימרת', en:'Not predicted' }, lang))
     ),
     homeR.createElement('div', { style:{ marginBottom:14 } },
-      homeR.createElement(window.VS, { home:f2.home, away:f2.away, lang:lang, big:true })),
+      homeR.createElement(window.VS, { home:nextFixture.home, away:nextFixture.away, lang:lang, big:true })),
     homeR.createElement('div', { style:{
       display:'flex', alignItems:'center', gap:8, padding:'10px 12px', borderRadius:14, marginBottom:12,
       background: cd.urgent ? 'color-mix(in srgb, var(--miss) 12%, white)' : 'var(--surface-2)',
@@ -119,11 +132,11 @@ function HomeScreen(props){
     homeR.createElement('button', { onClick:function(){ go('predict'); }, style:{
       width:'100%', height:50, borderRadius:16, background:'var(--brand)', color:'#fff', fontSize:15, fontWeight:800
     } }, predicted ? window.tx({ he:'ערוך הימור', en:'Edit prediction' }, lang) : window.tx({ he:'הזן הימור עכשיו', en:'Predict now' }, lang))
-  );
+  ) : null;
 
-  /* live strip */
-  var f1 = window.fixtureById('f1');
-  var liveStrip = homeR.createElement('button', { onClick:function(){ go('live'); }, style:{ width:'100%', textAlign: lang==='he'?'right':'left', marginBottom:14 } },
+  /* live strip (only when a game is in play) */
+  var f1 = liveFixture;
+  var liveStrip = f1 ? homeR.createElement('button', { onClick:function(){ go('live'); }, style:{ width:'100%', textAlign: lang==='he'?'right':'left', marginBottom:14 } },
     homeR.createElement('div', { style:{
       position:'relative', overflow:'hidden', borderRadius:20, padding:16,
       background:'linear-gradient(135deg, var(--ink), #232838)', color:'#fff'
@@ -148,10 +161,11 @@ function HomeScreen(props){
             homeR.createElement(window.Flag, { code:f1.away, size:26 }))
         ),
         homeR.createElement('div', { style:{ fontSize:12.5, opacity:.85, textAlign:'center' } },
-          window.tx({ he:'🎯 יוסי ורוני בבול פגיעה · אתה בכיוון', en:'🎯 Yossi & Roni nailed it · you\'re on track' }, lang))
+          L ? window.tx({ he:'🔴 משחק חי עכשיו · היכנס לזירת הלייב', en:'🔴 Live now · enter the live arena' }, lang)
+            : window.tx({ he:'🎯 יוסי ורוני בבול פגיעה · אתה בכיוון', en:'🎯 Yossi & Roni nailed it · you\'re on track' }, lang))
       )
     )
-  );
+  ) : null;
 
   /* mini-table */
   var top3 = sorted.slice(0, 3);

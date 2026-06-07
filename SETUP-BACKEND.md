@@ -5,10 +5,10 @@ match results/times come from a live sports feed and are **written only by the
 server** (users can never change them), chat is realtime, and points are computed
 server-side so standings can't be faked.
 
-> **Status / staging.** This step sets up the **backend + client plumbing**. The
-> app keeps showing demo (mock) data in the UI until the screen-wiring stage is
-> done. When `config.js` is empty the app runs in offline DEMO mode; once you fill
-> it in and the screens are wired to `window.DB`, it goes live.
+> **Status.** Backend **and** the client screens are wired. When `config.js` is
+> empty the app runs in offline DEMO mode (mock data). The moment you fill in your
+> Supabase URL + anon key below, the whole UI switches to live: real auth, real
+> fixtures/scores, live standings, realtime chat — all reading from your backend.
 
 ---
 

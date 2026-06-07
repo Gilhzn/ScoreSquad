@@ -66,14 +66,24 @@ function SimBtn(props){
 /* ---------- Live screen ---------- */
 function LiveScreen(props){
   var lang = props.lang || 'he';
-  var f1 = window.fixtureById('f1');
+  var L = props.data;
+  var fixtures = L ? L.fixtures : null;
+  // live: prefer an in-play game, else the most recent finished, else the soonest upcoming
+  var fx = L
+    ? (fixtures.filter(function(f){ return f.status==='live'; })[0]
+       || fixtures.filter(function(f){ return f.status==='finished'; }).slice(-1)[0]
+       || fixtures.filter(function(f){ return f.status==='locksoon'||f.status==='upcoming'; })[0] || null)
+    : window.fixtureById('f1');
+  var seed = fx || { hs:0, as:0, minute:0, home:null, away:null };
 
-  var scoreSt = lvR.useState({ h:f1.hs, a:f1.as }); var score = scoreSt[0], setScore = scoreSt[1];
-  var minSt = lvR.useState(f1.minute); var minute = minSt[0], setMinute = minSt[1];
+  var scoreSt = lvR.useState({ h:seed.hs || 0, a:seed.as || 0 }); var score = scoreSt[0], setScore = scoreSt[1];
+  var minSt = lvR.useState(seed.minute || 0); var minute = minSt[0], setMinute = minSt[1];
   var flashSt = lvR.useState(null); var flash = flashSt[0], setFlash = flashSt[1];
   var betsSt = lvR.useState(false); var showBets = betsSt[0], setShowBets = betsSt[1];
   var barWSt = lvR.useState(366); var barW = barWSt[0], setBarW = barWSt[1];
+  var liveBetsSt = lvR.useState([]); var liveBets = liveBetsSt[0], setLiveBets = liveBetsSt[1];
   var barRef = lvR.useRef(null);
+  var f1 = fx; // alias used by the scoreboard below
 
   // measure bar width
   lvR.useLayoutEffect(function(){
@@ -83,11 +93,34 @@ function LiveScreen(props){
     return function(){ window.removeEventListener('resize', measure); };
   }, []);
 
-  // minute auto-increment
+  // demo only: minute auto-increment (live minute comes from the server)
   lvR.useEffect(function(){
+    if(L) return;
     var id = setInterval(function(){ setMinute(function(m){ return m < 90 ? m + 1 : m; }); }, 4000);
     return function(){ clearInterval(id); };
   }, []);
+
+  // live: keep score/minute in sync with the real fixture (updated via realtime)
+  var fxKey = fx ? (fx.id + ':' + fx.hs + ':' + fx.as + ':' + fx.minute) : '';
+  lvR.useEffect(function(){
+    if(L && fx){ setScore({ h: fx.hs || 0, a: fx.as || 0 }); setMinute(fx.minute || 0); }
+  }, [fxKey]);
+
+  // live: fetch the revealed predictions for this fixture (RLS reveals them after lock)
+  lvR.useEffect(function(){
+    if(!L || !fx){ return; }
+    var cancelled = false;
+    window.DB.revealedPredictions(fx.id).then(function(rows){
+      if(cancelled) return;
+      setLiveBets(rows.map(function(r){
+        var p = r.profiles || {};
+        return { id:r.user_id, h:r.home_pred, a:r.away_pred,
+          member:{ id:r.user_id, name:{ he:p.display_name, en:p.display_name },
+                   color:p.avatar_color || '#64748B', you:r.user_id === L.myId } };
+      }));
+    }).catch(function(){});
+    return function(){ cancelled = true; };
+  }, [L ? (fx ? fx.id : 0) : 0]);
 
   function fireGoal(side){
     setFlash(side === 'var' ? 'var' : 'goal');
@@ -101,12 +134,17 @@ function LiveScreen(props){
     setTimeout(function(){ setFlash(null); }, 1700);
   }
 
+  // unified prediction source: demo mock vs live revealed bets
+  var preds = L
+    ? liveBets
+    : window.LIVE_PREDS.map(function(p){ return { id:p.id, h:p.h, a:p.a, member:window.memberById(p.id) }; });
+
   /* avatar positions (posOf) — group of 2 per column inside each zone */
   function buildAvatars(){
     var byZone = { miss:[], track:[], hit:[] };
-    window.LIVE_PREDS.forEach(function(p){
+    preds.forEach(function(p){
       var bucket = bucketOf({ h:p.h, a:p.a }, score);
-      var member = window.memberById(p.id);
+      var member = p.member;
       if(member){ byZone[bucket].push(member); }
     });
     var out = [];
@@ -184,18 +222,16 @@ function LiveScreen(props){
     })
   );
 
-  /* sim buttons */
-  var simButtons = lvR.createElement('div', { style:{ display:'flex', gap:8, marginBottom:16 } },
-    lvR.createElement(SimBtn, { onClick:function(){ fireGoal('h'); } }, '⚽ ' + window.tx({ he:'גול לארגנטינה', en:'Goal Argentina' }, lang)),
-    lvR.createElement(SimBtn, { onClick:function(){ fireGoal('a'); } }, '⚽ ' + window.tx({ he:'גול לצרפת', en:'Goal France' }, lang)),
+  /* sim buttons — demo only (live scores come from the server, not simulation) */
+  var simButtons = L ? null : lvR.createElement('div', { style:{ display:'flex', gap:8, marginBottom:16 } },
+    lvR.createElement(SimBtn, { onClick:function(){ fireGoal('h'); } }, '⚽ ' + window.tx({ he:'גול לבית', en:'Home goal' }, lang)),
+    lvR.createElement(SimBtn, { onClick:function(){ fireGoal('a'); } }, '⚽ ' + window.tx({ he:'גול לחוץ', en:'Away goal' }, lang)),
     lvR.createElement(SimBtn, { blue:true, onClick:function(){ fireGoal('var'); } }, '📺 VAR')
   );
 
   /* "what did they bet?" feed */
-  var feedData = window.LIVE_PREDS.map(function(p){
-    var member = window.memberById(p.id);
-    var bucket = bucketOf({ h:p.h, a:p.a }, score);
-    return { member:member, h:p.h, a:p.a, bucket:bucket };
+  var feedData = preds.filter(function(p){ return p.member; }).map(function(p){
+    return { member:p.member, h:p.h, a:p.a, bucket: bucketOf({ h:p.h, a:p.a }, score) };
   });
   var visible = showBets ? feedData : feedData.slice(0, 4);
 
@@ -224,9 +260,17 @@ function LiveScreen(props){
     } }, showBets ? window.tx({ he:'הסתר', en:'Hide' }, lang) : window.tx({ he:'הצג את כולם', en:'Show all' }, lang))
   );
 
+  var title = lvR.createElement('div', { style:{ fontSize:25, fontWeight:800, marginBottom:14 } }, window.tx({ he:'זירת הלייב', en:'Live Arena' }, lang));
+
+  if(L && !fx){
+    return lvR.createElement('div', { style:{ padding:'8px 18px 110px' } }, title,
+      lvR.createElement(window.Card, { style:{ textAlign:'center', padding:'40px 16px', color:'var(--ink-3)', fontWeight:700 } },
+        window.tx({ he:'אין משחק חי כרגע. חזרו בזמן משחק! ⚽', en:'No live game right now. Come back at kickoff! ⚽' }, lang))
+    );
+  }
+
   return lvR.createElement('div', { style:{ padding:'8px 18px 110px' } },
-    lvR.createElement('div', { style:{ fontSize:25, fontWeight:800, marginBottom:14 } }, window.tx({ he:'זירת הלייב', en:'Live Arena' }, lang)),
-    scoreboard, tensionBar, simButtons, feed
+    title, scoreboard, tensionBar, simButtons, feed
   );
 }
 

@@ -2,11 +2,24 @@
 
 var uiR = React;
 
-/* ---------- Flag (CSS-drawn) ---------- */
+/* ---------- Flag (CSS-drawn for demo teams; logo image for live teams) ---------- */
 function Flag(props){
   var size = props.size || 28;
   var round = props.round != null ? props.round : 7;
   var team = window.TEAMS[props.code];
+
+  // Live teams carry a logo_url instead of a CSS flag config — render the crest.
+  if(team && team.logo_url && !team.flag){
+    return uiR.createElement('div', { style:{
+      width:size, height:size, borderRadius:'50%', overflow:'hidden', flex:'0 0 auto',
+      background:'#fff', boxShadow:'inset 0 0 0 1px rgba(0,0,0,0.08)',
+      display:'flex', alignItems:'center', justifyContent:'center'
+    } },
+      uiR.createElement('img', { src:team.logo_url, alt:'', width:size, height:size,
+        style:{ width:'100%', height:'100%', objectFit:'contain' } })
+    );
+  }
+
   var flag = team ? team.flag : { dir:'h', bands:['#ccc'] };
   var h = size * 0.72;
 

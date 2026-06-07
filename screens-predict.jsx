@@ -38,7 +38,9 @@ function LockTimer(props){
 /* ---------- MatchPredictions ---------- */
 function MatchPredictions(props){
   var lang = props.lang || 'he';
-  var games = window.FIXTURES.filter(function(f){ return f.status !== 'live' && f.status !== 'finished'; });
+  var L = props.data;
+  var allFixtures = L ? L.fixtures : window.FIXTURES;
+  var games = allFixtures.filter(function(f){ return f.status !== 'live' && f.status !== 'finished'; });
 
   var initial = {};
   games.forEach(function(f){
@@ -47,12 +49,20 @@ function MatchPredictions(props){
   var predsSt = prR.useState(initial); var preds = predsSt[0], setPreds = predsSt[1];
 
   function update(id, side, val){
+    var nextVals;
     setPreds(function(prev){
       var next = Object.assign({}, prev);
       next[id] = Object.assign({}, prev[id], { set:true });
       next[id][side] = val;
+      nextVals = next[id];
       return next;
     });
+    // persist to the backend in live mode (RLS rejects writes after lock)
+    if(L && nextVals){
+      L.actions.upsertPrediction(id, nextVals.h, nextVals.a).catch(function(e){
+        console.warn('[ScoreSquad] save prediction failed', e);
+      });
+    }
   }
 
   return prR.createElement('div', null,
@@ -207,7 +217,7 @@ function PredictScreen(props){
         { value:'podium',  label: window.tx({ he:'פודיום הטורניר', en:'Tournament podium' }, lang) }
       ]
     }),
-    tab === 'matches' ? prR.createElement(MatchPredictions, { lang:lang }) : prR.createElement(PodiumPredictions, { lang:lang })
+    tab === 'matches' ? prR.createElement(MatchPredictions, { lang:lang, data:props.data }) : prR.createElement(PodiumPredictions, { lang:lang, data:props.data })
   );
 }
 

@@ -44,9 +44,16 @@ function PerfGraph(props){
 /* ---------- Profile screen ---------- */
 function ProfileScreen(props){
   var lang = props.lang || 'he';
-  var me = window.memberById('me');
-  var sorted = window.membersSorted();
+  var L = props.data;
+  var sorted = L ? L.members : window.membersSorted();
+  var meLive = L ? (sorted.filter(function(m){ return m.you; })[0] || null) : null;
+  var me = L
+    ? { name:{ he:(L.profile&&L.profile.display_name)||'You', en:(L.profile&&L.profile.display_name)||'You' },
+        color:(L.profile&&L.profile.avatar_color)||'#FF7A1A',
+        pts: meLive ? meLive.pts : 0, exact_hits: meLive ? meLive.exact_hits : 0 }
+    : window.memberById('me');
   var meRank = sorted.findIndex(function(m){ return m.you; }) + 1;
+  if(meRank === 0) meRank = sorted.length || 1;
 
   /* hero */
   var hero = pfR.createElement('div', { style:{ textAlign:'center', marginBottom:22 } },
@@ -71,8 +78,8 @@ function ProfileScreen(props){
   var stats = [
     { label:{he:'נקודות',en:'Points'}, value: me.pts },
     { label:{he:'דירוג',en:'Rank'}, value: '#' + meRank },
-    { label:{he:'תארים',en:'Titles'}, value: 3 },
-    { label:{he:'בולים',en:'Hits'}, value: 7 },
+    { label:{he:'תארים',en:'Titles'}, value: L ? (window.BADGES.filter(function(b){return b.earned;}).length) : 3 },
+    { label:{he:'בולים',en:'Hits'}, value: L ? (me.exact_hits || 0) : 7 },
   ];
   var statsGrid = pfR.createElement('div', { style:{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 } },
     stats.map(function(s, i){

@@ -24,7 +24,7 @@ function Segmented(props){
 /* ---------- FullTable ---------- */
 function FullTable(props){
   var lang = props.lang || 'he';
-  var sorted = window.membersSorted();
+  var sorted = props.members ? props.members : window.membersSorted();
   var medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
   var header = lgR.createElement('div', { style:{ display:'flex', alignItems:'center', gap:10, padding:'0 14px 8px', fontSize:12, fontWeight:700, color:'var(--ink-3)' } },
     lgR.createElement('div', { style:{ width:22, textAlign:'center' } }, '#'),
@@ -70,19 +70,26 @@ function GifBubble(){
 /* ---------- Chat ---------- */
 function Chat(props){
   var lang = props.lang || 'he';
-  var msgsSt = lgR.useState(window.CHAT.slice());
-  var msgs = msgsSt[0], setMsgs = msgsSt[1];
+  var live = !!props.live;
+  var localSt = lgR.useState(window.CHAT.slice());
+  var localMsgs = localSt[0], setLocalMsgs = localSt[1];
+  var msgs = live ? (props.messages || []) : localMsgs;   // live: controlled by the store
   var inputSt = lgR.useState(''); var input = inputSt[0], setInput = inputSt[1];
   var stickersSt = lgR.useState(false); var showStickers = stickersSt[0], setShowStickers = stickersSt[1];
   var scrollRef = lgR.useRef(null);
 
   lgR.useEffect(function(){
     if(scrollRef.current){ scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }
-  }, [msgs]);
+  }, [msgs.length]);
 
   function send(text){
     if(!text || !text.trim()) return;
-    setMsgs(function(prev){ return prev.concat([{ id:'me', type:'msg', mine:true, text:text }]); });
+    if(live){
+      var isSticker = window.STICKERS.indexOf(text) >= 0;
+      props.onSend(isSticker ? 'sticker' : 'msg', text);   // realtime INSERT echoes it back
+    } else {
+      setLocalMsgs(function(prev){ return prev.concat([{ id:'me', type:'msg', mine:true, text:text }]); });
+    }
     setInput('');
   }
 
@@ -99,7 +106,10 @@ function Chat(props){
         )
       );
     }
-    var member = window.memberById(msg.id);
+    // live messages carry their own profile; demo messages look up MEMBERS
+    var member = msg.profile && msg.profile.display_name
+      ? { name:{ he:msg.profile.display_name, en:msg.profile.display_name }, color:msg.profile.color || '#64748B' }
+      : window.memberById(msg.id);
     if(msg.mine){
       return lgR.createElement('div', { key:i, style:{ display:'flex', flexDirection:'row-reverse', marginBottom:10 } },
         lgR.createElement('div', { style:{
@@ -115,7 +125,7 @@ function Chat(props){
           background:'var(--surface)', boxShadow:'0 1px 3px rgba(16,24,40,.06)', fontSize:14, fontWeight:600
         } }, window.tx(msg.text, lang));
     return lgR.createElement('div', { key:i, style:{ display:'flex', alignItems:'flex-end', gap:8, marginBottom:10 } },
-      lgR.createElement(window.Avatar, { member:member, size:30, lang:lang }),
+      lgR.createElement(window.Avatar, { member:member || {}, size:30, lang:lang }),
       lgR.createElement('div', null,
         lgR.createElement('div', { style:{ fontSize:11.5, fontWeight:700, color: member ? member.color : 'var(--ink-3)', marginBottom:3, marginInlineStart:4 } },
           member ? window.tx(member.name, lang) : ''),
@@ -166,7 +176,8 @@ function Chat(props){
 /* ---------- League screen ---------- */
 function LeagueScreen(props){
   var lang = props.lang || 'he';
-  var league = props.league;
+  var L = props.data;
+  var league = L ? (L.activeLeague || { name:{he:'',en:''}, emoji:'🏆', code:'', members:0 }) : props.league;
   var tabSt = lgR.useState('table'); var tab = tabSt[0], setTab = tabSt[1];
 
   var shareIcon = lgR.createElement('svg', { width:20, height:20, viewBox:'0 0 24 24' },
@@ -187,8 +198,10 @@ function LeagueScreen(props){
   );
 
   var content = tab === 'table'
-    ? lgR.createElement(FullTable, { lang:lang })
-    : lgR.createElement('div', { style:{ height:'calc(100vh - 320px)', minHeight:380 } }, lgR.createElement(Chat, { lang:lang }));
+    ? lgR.createElement(FullTable, { lang:lang, members: L ? L.members : null })
+    : lgR.createElement('div', { style:{ height:'calc(100vh - 320px)', minHeight:380 } },
+        lgR.createElement(Chat, { lang:lang, live: !!L, messages: L ? L.chat : null,
+          onSend: L ? function(type, body){ L.actions.sendMessage(type, body); } : null }));
 
   return lgR.createElement('div', { style:{ padding:'8px 18px 110px', display:'flex', flexDirection:'column', height:'100%' } },
     header,

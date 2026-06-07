@@ -60,7 +60,7 @@ copy(path.join(root, 'config.js'), path.join(www, 'config.js'));
 const PLUMBING = ['supabase-client','db'];
 PLUMBING.forEach(function(name){ copy(path.join(root, name + '.jsx'), path.join(www, name + '.js')); });
 
-const SCRIPTS = ['data','ui','ios-frame','tweaks-panel','screens-onboarding','screens-home','screens-league','screens-predict','screens-live','screens-profile','app'];
+const SCRIPTS = ['data','live-store','ui','ios-frame','tweaks-panel','screens-onboarding','screens-auth','screens-home','screens-league','screens-predict','screens-live','screens-profile','app'];
 SCRIPTS.forEach(function(name){
   copy(path.join(root, name + '.jsx'), path.join(www, name + '.js'));
 });
