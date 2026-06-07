@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>ScoreSquad</title>
+
+<!-- Fonts: Rubik (primary) + Heebo + Assistant (Tweak options) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Heebo:wght@400;500;600;700;800;900&family=Assistant:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<!-- React 18.3.1 (UMD) + ReactDOM + Babel Standalone, pinned versions.
+     NOTE: For production, add Subresource Integrity (SRI) hashes once online, e.g.:
+       integrity="sha384-..." crossorigin="anonymous"
+     Generate with:  curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A
+     (They were intentionally left off here because this build environment has no network
+      access to compute the correct hashes — a wrong hash would block the scripts entirely.) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    /* surfaces / ink */
+    --bg:#F4F5F7;            --surface:#FFFFFF;       --surface-2:#F6F7F9;
+    --ink:#15171C;          --ink-2:#5A6072;         --ink-3:#A1A7B3;   --line:#E8EAEF;
+    /* brand (swappable via Tweak) */
+    --brand:#00B86B;        --brand-deep:#04965A;
+    /* the three accuracy zones */
+    --hit:#12B981;          --hit-deep:#0A8F63;
+    --close:#F5A623;        --close-deep:#B9740A;
+    --miss:#FF5A5F;         --miss-deep:#D32F36;
+    /* misc */
+    --live:#FF3B30;         --gold:#FFC53D;            --gold-deep:#9A6B00;
+    --accent2:#FF7A1A;      --accent2-deep:#E85D00;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{ height:100%; margin:0; }
+
+  body{
+    font-family:'Rubik',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%, #EDEFF3 0%, #DFE2E8 100%);
+    overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+    color:var(--ink);
+  }
+
+  #stage{
+    transform-origin:50% 50%;
+    will-change:transform;
+  }
+
+  button{ font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; }
+  input{ font-family:inherit; }
+
+  /* big result/score numbers */
+  .ss-num{ font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-1px; }
+
+  ::-webkit-scrollbar{ width:0; height:0; }
+
+  /* ---- keyframes ---- */
+  @keyframes ssBlink{ 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes ssPop{
+    0%{ opacity:0; transform:scale(.86) }
+    60%{ opacity:1; transform:scale(1.04) }
+    100%{ opacity:1; transform:scale(1) }
+  }
+  @keyframes ssShake{
+    0%,100%{ transform:translateX(0) rotate(0) }
+    20%{ transform:translateX(-4px) rotate(-9deg) }
+    40%{ transform:translateX(4px) rotate(8deg) }
+    60%{ transform:translateX(-3px) rotate(-6deg) }
+    80%{ transform:translateX(3px) rotate(5deg) }
+  }
+</style>
+</head>
+<body>
+  <div id="stage"><div id="root"></div></div>
+
+  <!-- script load order: data -> ui -> frame -> tweaks -> screens -> app -->
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="screens-onboarding.jsx"></script>
+  <script type="text/babel" src="screens-home.jsx"></script>
+  <script type="text/babel" src="screens-league.jsx"></script>
+  <script type="text/babel" src="screens-predict.jsx"></script>
+  <script type="text/babel" src="screens-live.jsx"></script>
+  <script type="text/babel" src="screens-profile.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+
+  <!-- stage scaling: fit 402x874 into the viewport, no repeating interval -->
+  <script>
+    (function(){
+      var STAGE_W = 402, STAGE_H = 874;
+      function fit(){
+        var stage = document.getElementById('stage');
+        if(!stage) return;
+        var s = Math.min(
+          1,
+          (window.innerHeight - 24) / STAGE_H,
+          (window.innerWidth  - 24) / STAGE_W
+        );
+        stage.style.transform = 'scale(' + s + ')';
+      }
+      window.addEventListener('load', fit);
+      window.addEventListener('resize', fit);
+      if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); }
+      setTimeout(fit, 300);
+      setTimeout(fit, 1200);
+      fit();
+    })();
+  </script>
+</body>
+</html>
