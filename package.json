@@ -10,13 +10,14 @@
     "android:apk": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.107.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@capacitor/android": "6.2.0",
     "@capacitor/cli": "6.2.0",
     "@capacitor/core": "6.2.0",
-    "@capacitor/android": "6.2.0",
     "@fontsource-variable/rubik": "^5.0.0"
   }
 }

@@ -1,0 +1,4 @@
+project_id = "scoresquad"
+
+[functions.sync-fixtures]
+verify_jwt = true

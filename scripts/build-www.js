@@ -21,9 +21,10 @@ rmrf(www);
 mkdirp(vendor);
 mkdirp(fontsDir);
 
-// 2. vendor React UMD (production)
+// 2. vendor React + Supabase UMD (production)
 copy(path.join(root, 'node_modules/react/umd/react.production.min.js'), path.join(vendor, 'react.production.min.js'));
 copy(path.join(root, 'node_modules/react-dom/umd/react-dom.production.min.js'), path.join(vendor, 'react-dom.production.min.js'));
+copy(path.join(root, 'node_modules/@supabase/supabase-js/dist/umd/supabase.js'), path.join(vendor, 'supabase.js'));
 
 // 3. fonts (Rubik variable: hebrew + latin subsets)
 const fsrc = path.join(root, 'node_modules/@fontsource-variable/rubik/files');
@@ -53,7 +54,12 @@ const fontCss =
 `;
 fs.writeFileSync(path.join(fontsDir, 'rubik.css'), fontCss);
 
-// 4. copy app scripts (.jsx -> .js, content unchanged)
+// 4. copy client plumbing + app scripts (.jsx -> .js, content unchanged).
+//    config.js is already plain .js; the rest are React.createElement (no JSX).
+copy(path.join(root, 'config.js'), path.join(www, 'config.js'));
+const PLUMBING = ['supabase-client','db'];
+PLUMBING.forEach(function(name){ copy(path.join(root, name + '.jsx'), path.join(www, name + '.js')); });
+
 const SCRIPTS = ['data','ui','ios-frame','tweaks-panel','screens-onboarding','screens-home','screens-league','screens-predict','screens-live','screens-profile','app'];
 SCRIPTS.forEach(function(name){
   copy(path.join(root, name + '.jsx'), path.join(www, name + '.js'));
@@ -64,13 +70,13 @@ const shell = fs.readFileSync(path.join(root, 'ScoreSquad.html'), 'utf8');
 const styleMatch = shell.match(/<style>([\s\S]*?)<\/style>/);
 const styleBlock = styleMatch ? styleMatch[1] : '';
 
-const scriptTags = ['vendor/react.production.min.js', 'vendor/react-dom.production.min.js']
-  .concat(SCRIPTS.map(function(n){ return n + '.js'; }))
-  .map(function(src, i){
-    // inject the native flag right before the app scripts (after the two vendor scripts)
-    var flag = (i === 2) ? '  <script>window.SS_NATIVE = true;</script>\n' : '';
-    return flag + '  <script src="' + src + '"></script>';
-  }).join('\n');
+// load order: vendor -> config -> supabase client -> db -> [native flag] -> app
+const VENDOR = ['vendor/react.production.min.js', 'vendor/react-dom.production.min.js', 'vendor/supabase.js'];
+const PRE = VENDOR.concat(['config.js']).concat(PLUMBING.map(function(n){ return n + '.js'; }));
+const scriptTags = PRE.map(function(src){ return '  <script src="' + src + '"></script>'; })
+  .concat(['  <script>window.SS_NATIVE = true;</script>'])
+  .concat(SCRIPTS.map(function(n){ return '  <script src="' + n + '.js"></script>'; }))
+  .join('\n');
 
 const indexHtml =
 `<!DOCTYPE html>

@@ -19,6 +19,8 @@
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin="anonymous"></script>
+<!-- Supabase JS client (for live mode; harmless in demo mode) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
   :root{
@@ -81,7 +83,10 @@
 <body>
   <div id="stage"><div id="root"></div></div>
 
-  <!-- script load order: data -> ui -> frame -> tweaks -> screens -> app -->
+  <!-- script load order: config -> supabase client -> db -> data -> ui -> frame -> tweaks -> screens -> app -->
+  <script src="config.js"></script>
+  <script type="text/babel" src="supabase-client.jsx"></script>
+  <script type="text/babel" src="db.jsx"></script>
   <script type="text/babel" src="data.jsx"></script>
   <script type="text/babel" src="ui.jsx"></script>
   <script type="text/babel" src="ios-frame.jsx"></script>
