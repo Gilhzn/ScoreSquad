@@ -1,0 +1,22 @@
+{
+  "name": "scoresquad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ScoreSquad — social sports-score prediction app (mobile)",
+  "scripts": {
+    "build:www": "node scripts/build-www.js",
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android",
+    "android:apk": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.0",
+    "@capacitor/core": "6.2.0",
+    "@capacitor/android": "6.2.0",
+    "@fontsource-variable/rubik": "^5.0.0"
+  }
+}

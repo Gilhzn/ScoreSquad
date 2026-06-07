@@ -46,6 +46,33 @@ This is a **zero-build** prototype — React + Babel load from a CDN.
 
 Click the gear icon to open Tweaks: language, brand color, and font. Preferences persist automatically.
 
+## אפליקציית אנדרואיד (APK) / Android app
+
+הפרוטוטייפ נארז כאפליקציית אנדרואיד באמצעות **Capacitor**, במסך מלא (ללא מסגרת האייפון). React והגופנים נארזים מקומית, כך שהאפליקציה עצמאית ואינה תלויה ב-CDN.
+
+The prototype is packaged as an Android app via **Capacitor**, full-screen (no iPhone frame). React and fonts are bundled locally, so the app is self-contained with no CDN dependency.
+
+### בנייה אוטומטית ב-CI (מומלץ) / Automatic CI build
+
+בכל דחיפה לענף, **GitHub Actions** (`.github/workflows/android.yml`) בונה APK ומפרסם אותו כ-**Release**. הורידו את `ScoreSquad-debug.apk` מעמוד ה-Releases של הריפו.
+
+On every push, **GitHub Actions** builds an APK and publishes it as a **Release**. Download `ScoreSquad-debug.apk` from the repo's Releases page.
+
+### בנייה מקומית / Local build
+
+```bash
+npm install
+npm run build:www          # assemble the self-contained www/ bundle
+npx cap add android        # generate the native Android project (first time)
+npx cap sync android
+cd android && ./gradlew assembleDebug
+# APK at: android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+> דרוש Android SDK + JDK 17+ מותקנים מקומית. בסביבת הפיתוח של Claude אי אפשר לבנות APK כי `dl.google.com` / Google Maven חסומים.
+>
+> Requires a local Android SDK + JDK 17+. The Claude dev sandbox cannot build the APK because `dl.google.com` / Google Maven are blocked.
+
 ## הערות / Notes
 
 - כל הנתונים mock; אין auth/שרת אמיתי. שערים בלייב מסומלצים בכפתורים.

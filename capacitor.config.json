@@ -1,0 +1,11 @@
+{
+  "appId": "il.co.progis.scoresquad",
+  "appName": "ScoreSquad",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F4F5F7"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -6,6 +6,19 @@ function IOSDevice(props){
   var w = props.width || 402;
   var h = props.height || 874;
 
+  // Native (APK / full-screen) mode: drop the iPhone chrome and fill the viewport.
+  // The OS provides the real status bar; we only reserve the safe-area insets.
+  if(window.SS_NATIVE){
+    return frameR.createElement('div', { style:{
+      position:'fixed', inset:0, background:'var(--bg)', overflow:'hidden',
+      paddingTop:'env(safe-area-inset-top, 0px)', paddingBottom:'env(safe-area-inset-bottom, 0px)'
+    } },
+      frameR.createElement('div', { style:{ position:'relative', width:'100%', height:'100%', overflow:'hidden' } },
+        props.children
+      )
+    );
+  }
+
   // status bar
   var statusBar = frameR.createElement('div', { style:{
     position:'absolute', top:0, insetInlineStart:0, insetInlineEnd:0, height:54,

@@ -121,8 +121,10 @@ function App(props){
   else if(tab === 'live')    screen = appR.createElement(window.LiveScreen, { lang:lang });
   else if(tab === 'profile') screen = appR.createElement(window.ProfileScreen, { lang:lang, onLogout:function(){ setAuthed(false); setTab('home'); } });
 
+  // In native (full-screen) mode the OS draws the status bar, so we need only a small spacer.
+  var topSpacer = window.SS_NATIVE ? 14 : 58;
   return appR.createElement('div', { dir:dir, style:Object.assign({ position:'absolute', inset:0, display:'flex', flexDirection:'column' }, rootVars) },
-    appR.createElement('div', { style:{ height:58, flex:'0 0 auto' } }),
+    appR.createElement('div', { style:{ height:topSpacer, flex:'0 0 auto' } }),
     appR.createElement('div', { style:{ flex:1, overflowY:'auto', overflowX:'hidden' } }, screen),
     appR.createElement(TabBar, { tab:tab, setTab:setTab, lang:lang })
   );
@@ -136,11 +138,13 @@ function Root(){
   window.__lang = t.lang;
 
   // gear toggle (stands in for the host environment's Tweaks bar)
-  var gear = appR.createElement('button', { onClick:function(){ setShow(!show); }, 'aria-label':'Tweaks', style:{
-    position:'absolute', top:14, insetInlineEnd:-2, zIndex:200,
-    width:34, height:34, borderRadius:'50%', background:'rgba(255,255,255,.92)',
+  var gearPos = window.SS_NATIVE
+    ? { position:'fixed', top:'calc(env(safe-area-inset-top, 0px) + 10px)', insetInlineEnd:12 }
+    : { position:'absolute', top:14, insetInlineEnd:-2 };
+  var gear = appR.createElement('button', { onClick:function(){ setShow(!show); }, 'aria-label':'Tweaks', style:Object.assign({
+    zIndex:200, width:34, height:34, borderRadius:'50%', background:'rgba(255,255,255,.92)',
     boxShadow:'0 4px 12px rgba(16,24,40,.2)', display:'flex', alignItems:'center', justifyContent:'center'
-  } },
+  }, gearPos) },
     appR.createElement('svg', { width:19, height:19, viewBox:'0 0 24 24', fill:'none', stroke:'#15171C', strokeWidth:2 },
       appR.createElement('circle', { cx:12, cy:12, r:3 }),
       appR.createElement('path', { d:'M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z' })
